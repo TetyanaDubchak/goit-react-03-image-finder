@@ -1,21 +1,27 @@
 import React, { Component } from "react";
-import { Searchbar } from "./Searchbar/Searchbar";
-import { ImageGallery } from "./ImageGallery/ImageGallery";
-import { Button } from "./Button/Button";
+import { Notify } from 'notiflix';
 
-import { fetchImages } from "../api";
+import { Searchbar } from "../Searchbar/Searchbar";
+import { ImageGallery } from "../ImageGallery/ImageGallery";
+import { Button } from "../Button/Button";
+
+import { fetchImages } from "../../api";
+
+import css from './App.module.css'
+import { Loader } from "components/Loader/Loader";
 
 export class App extends Component {
   state = {
     images: [],
     searchValue: '',
     page: 1,
-    value: ''
-
+    value: '',
+    isLoading: false,
   }
 
   receiveImages = async () => {
     try {
+      this.setState({isLoading: true})
       const data = await fetchImages(this.state.searchValue, this.state.page);
 
       this.setState((prevState) => ({
@@ -30,6 +36,9 @@ export class App extends Component {
 
     } catch (error) {
       console.log(error.message);
+      Notify.failure('Sorry, something went wrong')
+    } finally {
+      this.setState({isLoading: false})
     }
     
   }
@@ -48,10 +57,15 @@ export class App extends Component {
   }
 
 
-   handleOnSubmit= async(e) => {
+   handleOnSubmit= (e) => {
      e.preventDefault();
+
+     if (e.target.search.value.trim() === '') {
+      Notify.warning('Please, enter something what you want to see')
+      return;
+    }
      this.setState({ searchValue: e.target.search.value })
-     
+     this.setState({ value: '' })
   }
 
     handleChange = (e) => {
@@ -65,18 +79,11 @@ export class App extends Component {
 
   render() {
     return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          fontSize: 40,
-          color: '#010101'
-        }}
-      >
-        <Searchbar handleSubmit={this.handleOnSubmit} handleChange={this.handleChange} changeValue={ this.state.value} />
+      <div className={css.wrapper}>
+        <Searchbar handleSubmit={this.handleOnSubmit} handleChange={this.handleChange} changeValue={this.state.value} />
+        {this.state.isLoading && <Loader/>}
         <ImageGallery collection={ this.state.images}/>
-        <Button loadMore={ this.handleLoadMore}/>
+        { this.state.images.length>0 && <Button loadMore={ this.handleLoadMore}/>}
       </div>
     );
   }
